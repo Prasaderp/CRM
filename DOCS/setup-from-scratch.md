@@ -18,7 +18,7 @@ The other documents go deeper on individual topics. This one is the spine.
 - A domain name they own, and access to its DNS records.
 - A mailbox to send from, and the list of people who should receive enquiries.
 - Property details: name, locality, price wording, and the RERA registration
-  number and authority link.
+number and authority link.
 - Their published privacy policy, or approval to publish one.
 - Access to their social media accounts — as a named user, never their password.
 
@@ -27,12 +27,14 @@ for hosting, [Neon](https://neon.com) for the database.
 
 **What it costs.** Confirm current prices before quoting the client — these move.
 
-| Piece | Plan | Why not free |
-|---|---|---|
-| Static site (the website) | Free | — |
-| Web service (the API) | Starter, ~$7/month | Free services sleep after 15 minutes idle and take 30–60 seconds to wake. Someone clicking an ad would stare at a blank screen |
-| Background worker (email) | Starter, ~$7/month | Render has no free tier for background workers |
-| Neon database | Launch, ~$5/month | Explained in 2.3 — the worker polls continuously, so the free plan's compute allowance runs out mid-month |
+
+| Piece                     | Plan               | Why not free                                                                                                                   |
+| ------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| Static site (the website) | Free               | —                                                                                                                              |
+| Web service (the API)     | Starter, ~$7/month | Free services sleep after 15 minutes idle and take 30–60 seconds to wake. Someone clicking an ad would stare at a blank screen |
+| Background worker (email) | Starter, ~$7/month | Render has no free tier for background workers                                                                                 |
+| Neon database             | Launch, ~$5/month  | Explained in 2.3 — the worker polls continuously, so the free plan's compute allowance runs out mid-month                      |
+
 
 Roughly $20/month. That is the honest floor for something that answers an ad
 click immediately and sends email reliably.
@@ -42,6 +44,8 @@ time. Stages 3 and 4 depend on how fast the client responds — usually the slow
 part. Stages 5 to 7 an afternoon.
 
 ---
+
+
 
 # Stage 1 — Run it on your own machine
 
@@ -69,7 +73,11 @@ carry it into production by accident.
 
 ---
 
+
+
 # Stage 2 — Deploy it
+
+
 
 ## 2.1 What you are building
 
@@ -105,33 +113,34 @@ like `/api/v1/leads` and sends its session cookie with `same-origin` credentials
 If the browser talks to `crm.clientdomain.com` for pages and
 `crm-api.onrender.com` for data, sign-in breaks and no setting fixes it.
 
-Render solves this with a static site *rewrite rule*: requests to `/api/*` are
+Render solves this with a static site *rewrite rule*: requests to `/api/`* are
 proxied through to the API service, so the browser only ever sees one hostname.
 
 Two consequences to remember, because both cause confusing failures later:
 
 - `PUBLIC_ORIGIN` must be the **static site's** domain, not the API's
-  `onrender.com` URL. The browser's `Origin` header carries the static site
-  domain, and the API rejects sign-in requests whose origin it does not
-  recognise.
+`onrender.com` URL. The browser's `Origin` header carries the static site
+domain, and the API rejects sign-in requests whose origin it does not
+recognise.
 - Render does not apply a rewrite when a real file exists at that path. This is
-  helpful — your JavaScript and CSS files are served directly — but it means the
-  rules must be ordered correctly, with `/api/*` before the catch-all.
+helpful — your JavaScript and CSS files are served directly — but it means the
+rules must be ordered correctly, with `/api/*` before the catch-all.
+
+
 
 ## 2.3 Create the database
 
 1. Create a Neon project. Choose the region closest to the client's customers.
 2. Name the database `real_estate_crm`.
 3. From the project dashboard, copy the connection string. Neon offers two:
-   - **Direct** — `...ep-xxx.region.aws.neon.tech/...`
-   - **Pooled** — the same host with `-pooler` inserted
-
+  - **Direct** — `...ep-xxx.region.aws.neon.tech/...`
+  - **Pooled** — the same host with `-pooler` inserted
    **Use the direct one.** The pooled endpoint exists for serverless functions
    that open a connection per request. Our services are long-lived processes that
    already maintain their own connection pool, and migrations need a direct
    connection anyway. Using the pooler here adds a failure mode for no benefit.
 4. Keep the string somewhere safe. It contains the password and it is the only
-   thing standing between the internet and your customer data.
+  thing standing between the internet and your customer data.
 
 **On the Neon plan.** Neon suspends a database after five minutes of inactivity
 and this cannot be switched off. Our email worker checks for queued jobs every
@@ -153,13 +162,15 @@ database password.
 
 In Render, create a **Web Service** from the repository.
 
-| Setting | Value |
-|---|---|
-| Language | Python 3 |
-| Build command | `pip install uv && uv sync --project backend --no-dev` |
-| Start command | see below |
-| Health check path | `/health/ready` |
-| Instance type | Starter or higher |
+
+| Setting           | Value                                                  |
+| ----------------- | ------------------------------------------------------ |
+| Language          | Python 3                                               |
+| Build command     | `pip install uv && uv sync --project backend --no-dev` |
+| Start command     | see below                                              |
+| Health check path | `/health/ready`                                        |
+| Instance type     | Starter or higher                                      |
+
 
 Start command:
 
@@ -169,16 +180,18 @@ uv run --project backend uvicorn real_estate_crm.app:app --host 0.0.0.0 --port $
 
 Each part of that line is load-bearing:
 
-- **`--host 0.0.0.0`** — Render only routes traffic to a service listening on all
-  interfaces. Binding to `127.0.0.1` produces a service that starts cleanly and
-  never receives a request.
-- **`--port $PORT`** — Render assigns the port and expects you to use it.
-- **`--forwarded-allow-ips="*"`** — the API rate-limits form submissions per
-  visitor IP. Behind Render's load balancer every request appears to come from
-  the same address unless the forwarded headers are trusted, which would put all
-  visitors in one bucket and start returning `429` to real people. Render's
-  proxy IPs are not published, so they cannot be listed individually. See the
-  note at the end of this section on what that trades away.
+- `--host 0.0.0.0` — Render only routes traffic to a service listening on all
+interfaces. Binding to `127.0.0.1` produces a service that starts cleanly and
+never receives a request.
+- `--port $PORT` — Render assigns the port and expects you to use it.
+- `--forwarded-allow-ips="*"` — the API rate-limits form submissions per
+visitor IP. Behind Render's load balancer every request appears to come from
+the same address unless the forwarded headers are trusted, which would put all
+visitors in one bucket and start returning `429` to real people. Render's
+proxy IPs are not published, so they cannot be listed individually. See the
+note at the end of this section on what that trades away.
+
+
 
 ### Environment variables
 
@@ -211,25 +224,25 @@ RECIPIENT_ALLOW_LIST=agent@clientdomain.com,owner@clientdomain.com
 Notes on the ones that bite:
 
 - `ENVIRONMENT=production` turns on secure cookies, HTTPS enforcement, origin
-  checking, and mandatory SMTP authentication and encryption. The application
-  refuses to start without them. Do not set it to `local` to clear a startup
-  error — the error is telling you something real.
+checking, and mandatory SMTP authentication and encryption. The application
+refuses to start without them. Do not set it to `local` to clear a startup
+error — the error is telling you something real.
 - `SMTP_SECURITY` must be `starttls` for port 587 or `tls` for port 465. Ask the
-  mail provider which they want; Google Workspace and Microsoft 365 both use 587
-  with STARTTLS. The application will not send credentials over an unencrypted
-  connection, so getting this wrong fails loudly at the first email rather than
-  silently leaking a password.
+mail provider which they want; Google Workspace and Microsoft 365 both use 587
+with STARTTLS. The application will not send credentials over an unencrypted
+connection, so getting this wrong fails loudly at the first email rather than
+silently leaking a password.
 - `SMTP_PASSWORD` must be an **app password** generated for this purpose, not the
-  mailbox owner's login password. Ask the client to generate one; it can be
-  revoked without changing their own sign-in.
+mailbox owner's login password. Ask the client to generate one; it can be
+revoked without changing their own sign-in.
 - `PUBLIC_ORIGIN` is the client's domain from 2.9, not the `onrender.com` URL.
-  You will set the real value in 2.10 after the domain exists.
+You will set the real value in 2.10 after the domain exists.
 
 Ask the client to confirm the sending domain has SPF, DKIM, and DMARC records.
 Without them, notification emails land in spam and the client concludes the CRM
 is broken.
 
-**What `--forwarded-allow-ips="*"` costs you.** Trusting forwarded headers from
+**What** `--forwarded-allow-ips="*"` **costs you.** Trusting forwarded headers from
 any source means a determined attacker can vary the address the rate limiter
 sees, and so bypass the per-visitor limit of five submissions then one per
 minute. The application's global limit — 60 submissions with a one-per-second
@@ -267,12 +280,14 @@ never after.
 
 Create a **Background Worker** from the same repository.
 
-| Setting | Value |
-|---|---|
-| Build command | `pip install uv && uv sync --project backend --no-dev` |
+
+| Setting       | Value                                                                                                 |
+| ------------- | ----------------------------------------------------------------------------------------------------- |
+| Build command | `pip install uv && uv sync --project backend --no-dev`                                                |
 | Start command | `uv run --project backend python -m real_estate_crm.notifications.worker --worker-id render-worker-1` |
-| Environment | attach the same environment group from 2.5 |
-| Instance type | Starter |
+| Environment   | attach the same environment group from 2.5                                                            |
+| Instance type | Starter                                                                                               |
+
 
 No health check path and no port — background workers receive no traffic.
 
@@ -283,18 +298,22 @@ but one is enough for this volume and it keeps the logs readable.
 
 Create a **Static Site** from the same repository.
 
-| Setting | Value |
-|---|---|
-| Build command | `corepack enable && pnpm install --frozen-lockfile && pnpm --dir frontend exec vite build` |
-| Publish directory | `frontend/dist` |
-| Environment variable | `NODE_VERSION=24.18.0` |
+
+| Setting              | Value                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------ |
+| Build command        | `corepack enable && pnpm install --frozen-lockfile && pnpm --dir frontend exec vite build` |
+| Publish directory    | `frontend/dist`                                                                            |
+| Environment variable | `NODE_VERSION=24.18.0`                                                                     |
+
 
 Then add two **rewrite** rules, in this order:
 
-| # | Source | Destination | Action |
-|---|---|---|---|
-| 1 | `/api/*` | `https://<your-api-service>.onrender.com/api/*` | Rewrite |
-| 2 | `/*` | `/index.html` | Rewrite |
+
+| #   | Source   | Destination                                     | Action  |
+| --- | -------- | ----------------------------------------------- | ------- |
+| 1   | `/api/*` | `https://<your-api-service>.onrender.com/api/*` | Rewrite |
+| 2   | `/*`     | `/index.html`                                   | Rewrite |
+
 
 Rule 1 is what makes the API same-origin. Rule 2 is what makes deep links work:
 without it, someone opening `/p/emerald-heights-2bhk` straight from an ad gets a
@@ -307,11 +326,11 @@ reintroduces the cross-origin problem rule 1 exists to solve.
 ## 2.9 Point the domain at the static site
 
 1. In the static site's settings, add the custom domain
-   `crm.clientdomain.com`.
+  `crm.clientdomain.com`.
 2. Render shows the DNS record to create. Add it at the client's DNS provider —
-   normally a `CNAME` pointing at the Render-supplied hostname.
+  normally a `CNAME` pointing at the Render-supplied hostname.
 3. Wait for Render to report the domain as verified and the certificate as
-   issued. This usually takes minutes; DNS propagation can make it longer.
+  issued. This usually takes minutes; DNS propagation can make it longer.
 
 Use a subdomain like `crm.` rather than the client's main website domain, so this
 is independent of whatever else they host.
@@ -337,13 +356,15 @@ curl -sS -o /dev/null -w "%{http_code}\n" https://crm.clientdomain.com/metrics
 curl -sS -o /dev/null -w "%{http_code}\n" https://crm.clientdomain.com/p/anything-at-all
 ```
 
-| Check | Expected | If it fails |
-|---|---|---|
-| `/health/live` | `{"status":"live"}` | Rewrite rule 1 is wrong, or the API is not running |
-| `/health/ready` | `{"status":"ready","reason":"ready"}` | `database_unavailable` means `DATABASE_URL` is wrong; `migration_mismatch` means 2.6 did not complete |
-| `/metrics` | `404` | Expected — that endpoint only answers locally |
-| `/p/anything-at-all` | `200`, app's own "not found" state | Rewrite rule 2 is missing |
-| The domain in a browser | Padlock, no warning | Certificate not issued yet |
+
+| Check                   | Expected                              | If it fails                                                                                           |
+| ----------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `/health/live`          | `{"status":"live"}`                   | Rewrite rule 1 is wrong, or the API is not running                                                    |
+| `/health/ready`         | `{"status":"ready","reason":"ready"}` | `database_unavailable` means `DATABASE_URL` is wrong; `migration_mismatch` means 2.6 did not complete |
+| `/metrics`              | `404`                                 | Expected — that endpoint only answers locally                                                         |
+| `/p/anything-at-all`    | `200`, app's own "not found" state    | Rewrite rule 2 is missing                                                                             |
+| The domain in a browser | Padlock, no warning                   | Certificate not issued yet                                                                            |
+
 
 `/health/live` returning JSON is the proof that the rewrite proxy works, since
 that response can only have come from the API service through it.
@@ -356,6 +377,8 @@ API service itself instead of as a separate static site — one origin, no proxy
 at the cost of losing the CDN.
 
 ---
+
+
 
 # Stage 3 — Load the client's real content
 
@@ -416,12 +439,12 @@ VALUES
 Rules the database enforces, so save yourself a rejected insert:
 
 - `slug` must be lowercase letters, digits, and hyphens, and must start and end
-  with a letter or digit. It appears in the ad link, so choose it once and keep
-  it.
+with a letter or digit. It appears in the ad link, so choose it once and keep
+it.
 - `title` up to 160 characters, `summary` up to 2000, `locality` up to 160,
-  `price_label` up to 80.
+`price_label` up to 80.
 - `project_registration_number` and `registration_authority_url` are what the
-  page displays for RERA compliance. Get these from the client in writing.
+page displays for RERA compliance. Get these from the client in writing.
 
 To retire a property, do not delete it — existing enquiries reference it. Set it
 inactive, and its page starts showing "Property unavailable":
@@ -486,9 +509,9 @@ obviously fake details, and confirm the whole chain:
 1. The page returns a reference.
 2. The enquiry appears in `/crm/inquiries` with the right property.
 3. The email arrives in every recipient mailbox — check spam too, and fix the
-   domain records if it landed there.
+  domain records if it landed there.
 4. In the Neon SQL editor,
-   `SELECT state, count(*) FROM outbox_jobs GROUP BY state` shows the job as
+  `SELECT state, count(*) FROM outbox_jobs GROUP BY state` shows the job as
    `completed`.
 
 Delete the test enquiry afterwards.
@@ -499,6 +522,8 @@ in Render, and see the troubleshooting section of [README.md](./README.md).
 
 ---
 
+
+
 # Stage 4 — Get access to the client's accounts
 
 Ask for access as yourself. Never accept their password: it defeats their
@@ -506,12 +531,14 @@ two-factor authentication, and it makes every action untraceable.
 
 What to request on each platform:
 
-| Platform | What you need | How they grant it |
-|---|---|---|
-| Facebook | Access to the Page and the ad account | Meta Business Suite → Settings → add you as a person with the specific access |
-| Instagram | Their professional account linked to that Page | The link is made from the Page's settings, not Accounts Center |
-| X | Access to the ads account | X Ads Manager → account access |
-| TikTok | Not applicable in India | — |
+
+| Platform  | What you need                                  | How they grant it                                                             |
+| --------- | ---------------------------------------------- | ----------------------------------------------------------------------------- |
+| Facebook  | Access to the Page and the ad account          | Meta Business Suite → Settings → add you as a person with the specific access |
+| Instagram | Their professional account linked to that Page | The link is made from the Page's settings, not Accounts Center                |
+| X         | Access to the ads account                      | X Ads Manager → account access                                                |
+| TikTok    | Not applicable in India                        | —                                                                             |
+
 
 Alongside access, get written confirmation of: who owns the business entity
 running the ads, who is authorised to approve spend, and who can pause a campaign
@@ -530,6 +557,8 @@ can cause real trouble rather than just wasted budget.
 
 ---
 
+
+
 # Stage 5 — Build the campaign links
 
 This is the connection between the ad and the CRM. There is no integration, no
@@ -544,13 +573,15 @@ Understanding that removes most of the confusion about how these fit together.
 https://crm.clientdomain.com/p/emerald-heights-2bhk?utm_source=facebook&utm_medium=paid_social&utm_campaign=fb-emerald-2026q3&utm_content=fb-feed-video-a
 ```
 
-| Part | What it does |
-|---|---|
-| `/p/emerald-heights-2bhk` | Chooses the property. Must match the `slug` from Stage 3.3 |
-| `utm_source` | Tells the CRM which platform. Must be exactly `facebook`, `instagram`, `tiktok`, or `x` |
-| `utm_medium` | `paid_social` for ads, `social` for organic posts |
-| `utm_campaign` | Your campaign name. Keep it stable |
-| `utm_content` | Which specific ad or image. Keep it stable |
+
+| Part                      | What it does                                                                            |
+| ------------------------- | --------------------------------------------------------------------------------------- |
+| `/p/emerald-heights-2bhk` | Chooses the property. Must match the `slug` from Stage 3.3                              |
+| `utm_source`              | Tells the CRM which platform. Must be exactly `facebook`, `instagram`, `tiktok`, or `x` |
+| `utm_medium`              | `paid_social` for ads, `social` for organic posts                                       |
+| `utm_campaign`            | Your campaign name. Keep it stable                                                      |
+| `utm_content`             | Which specific ad or image. Keep it stable                                              |
+
 
 Get `utm_source` wrong by even one character — `Facebook`, `fb`, `facebook.com` —
 and the enquiry is recorded with source `unknown`. The server lowercases it, so
@@ -562,12 +593,14 @@ One link cannot honestly serve two platforms, because it carries one
 `utm_source`. Make a table before you touch any ad manager, and keep it — you
 will paste from it repeatedly and you will need it again when reporting:
 
-| Platform | Where used | Link |
-|---|---|---|
-| Facebook | Feed ad, video A | `…?utm_source=facebook&utm_medium=paid_social&utm_campaign=fb-emerald-2026q3&utm_content=fb-feed-video-a` |
+
+| Platform  | Where used       | Link                                                                                                       |
+| --------- | ---------------- | ---------------------------------------------------------------------------------------------------------- |
+| Facebook  | Feed ad, video A | `…?utm_source=facebook&utm_medium=paid_social&utm_campaign=fb-emerald-2026q3&utm_content=fb-feed-video-a`  |
 | Instagram | Feed ad, video A | `…?utm_source=instagram&utm_medium=paid_social&utm_campaign=ig-emerald-2026q3&utm_content=ig-feed-video-a` |
-| Instagram | Profile bio link | `…?utm_source=instagram&utm_medium=social&utm_campaign=ig-profile&utm_content=ig-bio` |
-| X | Promoted post | `…?utm_source=x&utm_medium=paid_social&utm_campaign=x-emerald-2026q3&utm_content=x-timeline-image-a` |
+| Instagram | Profile bio link | `…?utm_source=instagram&utm_medium=social&utm_campaign=ig-profile&utm_content=ig-bio`                      |
+| X         | Promoted post    | `…?utm_source=x&utm_medium=paid_social&utm_campaign=x-emerald-2026q3&utm_content=x-timeline-image-a`       |
+
 
 Never put a person's name, phone number, email, or budget in a link. These values
 are stored and appear in reports.
@@ -588,6 +621,8 @@ paid for the clicks.
 
 ---
 
+
+
 # Stage 6 — Create the ads
 
 Full navigation for each platform is in
@@ -600,11 +635,13 @@ so you know what you are looking for.
 In every ad manager there is one field that holds the destination. That single
 field is where your CRM link goes:
 
-| Platform | Field |
-|---|---|
-| Facebook / Instagram | Ad level → **Website URL** |
-| X | Ad group creative → the website card or button URL |
-| TikTok | Ad level → **Destination URL** |
+
+| Platform             | Field                                              |
+| -------------------- | -------------------------------------------------- |
+| Facebook / Instagram | Ad level → **Website URL**                         |
+| X                    | Ad group creative → the website card or button URL |
+| TikTok               | Ad level → **Destination URL**                     |
+
 
 Paste the complete link, parameters included. If the tool separately offers to
 append URL parameters, leave that empty — your link already has them, and
@@ -615,27 +652,31 @@ duplicates corrupt the attribution.
 Whatever else you choose, these four have to be right:
 
 1. **Objective: traffic.** Facebook and Instagram call it **Traffic**; X calls it
-   **Website Traffic**; TikTok calls it **Traffic**. Anything optimising for
+  **Website Traffic**; TikTok calls it **Traffic**. Anything optimising for
    conversions needs a tracking pixel, which is not installed.
 2. **Goal: link clicks.** On X specifically, do not choose *Site Visits* — it
-   requires the X Pixel and Ads Manager will send you off to configure one.
+  requires the X Pixel and Ads Manager will send you off to configure one.
 3. **One platform per campaign.** Turn off automatic placements and select only
-   the platform whose link you are using. On Meta this means switching off
+  the platform whose link you are using. On Meta this means switching off
    Advantage+ placements in the ad set.
 4. **Housing category.** If Meta offers a **Special Ad Category** selector and
-   Housing applies in your market, declare it. Running housing ads without it is
+  Housing applies in your market, declare it. Running housing ads without it is
    a common cause of account restrictions.
+
+
 
 ## 6.3 Before you publish
 
 - Open the ad preview and click the button. Confirm it reaches the property page
-  with the parameters intact. The platform may add its own `fbclid`, `ttclid`, or
-  `twclid` — expected, and handled.
+with the parameters intact. The platform may add its own `fbclid`, `ttclid`, or
+`twclid` — expected, and handled.
 - Confirm the ad and the page agree on price, availability, location, and who is
-  selling.
+selling.
 - Set a small starting budget and an end date, or name who will stop it.
 
 ---
+
+
 
 # Stage 7 — Test with a real, live ad
 
@@ -657,51 +698,63 @@ schedule, and a narrow audience. Wait for it to pass review and start delivering
 On a phone, on mobile data rather than office Wi-Fi:
 
 1. Scroll the platform's feed until the ad appears. Do not use the preview link —
-   the point is to click the delivered ad.
+  the point is to click the delivered ad.
 2. Tap it. The property page opens in the platform's in-app browser.
 3. Check the page: correct property, images loading, text readable without
-   zooming, form fields reachable, padlock visible.
+  zooming, form fields reachable, padlock visible.
 4. Fill in the form with obviously fake but realistic details, and submit.
 5. Confirm the reference appears.
 
+
+
 ## 7.3 Confirm every stage received it
 
-| Where | What to confirm |
-|---|---|
-| The phone | A reference was shown, in the form `RE-` plus ten characters |
-| `/crm/inquiries` | One enquiry, with the right property, and source matching the platform you clicked from |
-| The enquiry detail | The campaign and creative names from your link |
-| Recipient inboxes | The notification arrived, in the inbox rather than spam |
-| Neon SQL editor | `SELECT state, count(*) FROM outbox_jobs GROUP BY state` — the job is `completed` |
+
+| Where              | What to confirm                                                                         |
+| ------------------ | --------------------------------------------------------------------------------------- |
+| The phone          | A reference was shown, in the form `RE-` plus ten characters                            |
+| `/crm/inquiries`   | One enquiry, with the right property, and source matching the platform you clicked from |
+| The enquiry detail | The campaign and creative names from your link                                          |
+| Recipient inboxes  | The notification arrived, in the inbox rather than spam                                 |
+| Neon SQL editor    | `SELECT state, count(*) FROM outbox_jobs GROUP BY state` — the job is `completed`       |
+
 
 Then repeat once on the other mobile operating system. iOS Safari and Android
 Chrome render forms differently, and the in-app browsers differ again.
 
 ## 7.4 What each failure means
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| Ad click opens a "not found" page | The static site is not falling back to `index.html` | Add rewrite rule 2 (2.8) |
-| The page is blank for 30–60 seconds, then loads | The API is on a free instance and went to sleep | Move it to Starter or higher |
-| Page loads, source shows `unknown` | `utm_source` misspelled in the ad's URL field | Correct it in the ad and republish |
-| Page loads, no campaign name recorded | The URL was pasted without its parameters | Repaste the complete link |
-| Form submits, no reference appears | API down, or the rewrite rule is wrong | Render dashboard → API service → Logs |
-| Reference appears, no enquiry in the CRM | Cannot happen — they are one transaction | If you see this, you are looking at a different environment |
-| Enquiry present, no email | Worker or SMTP | Render dashboard → worker → Logs. `smtp_tls_unsupported` means `SMTP_SECURITY` does not match the port; `smtp_authentication` means the app password is wrong |
-| Email in spam | Sending domain records | Fix SPF, DKIM, and DMARC with the client |
-| `429` after a few submissions | The forwarded-IP flag is missing from the start command | Check 2.5 |
+
+| Symptom                                         | Cause                                                   | Fix                                                                                                                                                           |
+| ----------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ad click opens a "not found" page               | The static site is not falling back to `index.html`     | Add rewrite rule 2 (2.8)                                                                                                                                      |
+| The page is blank for 30–60 seconds, then loads | The API is on a free instance and went to sleep         | Move it to Starter or higher                                                                                                                                  |
+| Page loads, source shows `unknown`              | `utm_source` misspelled in the ad's URL field           | Correct it in the ad and republish                                                                                                                            |
+| Page loads, no campaign name recorded           | The URL was pasted without its parameters               | Repaste the complete link                                                                                                                                     |
+| Form submits, no reference appears              | API down, or the rewrite rule is wrong                  | Render dashboard → API service → Logs                                                                                                                         |
+| Reference appears, no enquiry in the CRM        | Cannot happen — they are one transaction                | If you see this, you are looking at a different environment                                                                                                   |
+| Enquiry present, no email                       | Worker or SMTP                                          | Render dashboard → worker → Logs. `smtp_tls_unsupported` means `SMTP_SECURITY` does not match the port; `smtp_authentication` means the app password is wrong |
+| Email in spam                                   | Sending domain records                                  | Fix SPF, DKIM, and DMARC with the client                                                                                                                      |
+| `429` after a few submissions                   | The forwarded-IP flag is missing from the start command | Check 2.5                                                                                                                                                     |
+
 
 Only after this test passes should the budget go up.
 
 ---
 
+
+
 # Stage 8 — Running it from here
+
+
 
 ## Daily
 
 - Do enquiries appear in the CRM and in the inbox? The client will notice this
-  before you do — ask them.
+before you do — ask them.
 - Any jobs stuck in the outbox `dead` state?
+
+
 
 ## Weekly
 
@@ -736,6 +789,8 @@ string and store it where the client keeps their records:
 ```powershell
 pg_dump "<the Neon direct connection string>" --format=custom --no-owner --file crm-backup.dump
 ```
+
+
 
 ## Deploying a change
 

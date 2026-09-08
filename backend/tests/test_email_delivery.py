@@ -137,13 +137,20 @@ def test_unicode_multipart_html_escaping_allow_list_and_stable_message_id(
     assert "Test <Agent> Ω" in plain and "Unicode Ω Homes <script>" in plain
     assert "&lt;Agent&gt; Ω" in rendered_html and "&lt;script&gt;" in rendered_html
     assert "<img src=x" not in rendered_html and "&lt;img src=x onerror=alert(1)&gt;" in rendered_html
+    assert "Budget: Not supplied" in plain and "Timeframe: Not supplied" in plain
+    assert "View and manage this inquiry in CRM" in rendered_html
+    assert f"/crm/inquiries/{email_entities[1]}" in rendered_html
+    assert message["Reply-To"] == "person@example.com"
 
 
 @pytest.mark.parametrize(
     ("payload", "expected"),
     [
         ({}, "invalid_email_configuration"),
-        ({"inquiryId": str(uuid.uuid4()), "propertyId": str(uuid.uuid4()), "pii": "forbidden"}, "invalid_email_configuration"),
+        (
+            {"inquiryId": str(uuid.uuid4()), "propertyId": str(uuid.uuid4()), "pii": "forbidden"},
+            "invalid_email_configuration",
+        ),
     ],
 )
 def test_malformed_or_contract_breaching_payload_is_terminal(
@@ -176,7 +183,9 @@ def test_header_injection_in_server_configuration_is_rejected(
     settings: Settings,
     smtp: type[CapturingSMTP],
 ) -> None:
-    poisoned = settings.model_copy(update={"recipient_allow_list_raw": "agent@client.example\r\nBcc: thief@example.com"})
+    poisoned = settings.model_copy(
+        update={"recipient_allow_list_raw": "agent@client.example\r\nBcc: thief@example.com"}
+    )
     _, result = _deliver(email_entities, poisoned, smtp)
     assert result.disposition is DeliveryDisposition.TERMINAL
     assert smtp.messages == []
@@ -210,9 +219,7 @@ def test_authenticated_smtp_uses_secret_without_exposing_it(
     settings: Settings,
     smtp: type[CapturingSMTP],
 ) -> None:
-    authenticated = settings.model_copy(
-        update={"smtp_username": "smtp-user", "smtp_password": SecretStr("secret")}
-    )
+    authenticated = settings.model_copy(update={"smtp_username": "smtp-user", "smtp_password": SecretStr("secret")})
     _, result = _deliver(email_entities, authenticated, smtp)
     assert result.disposition is DeliveryDisposition.SENT
     assert smtp.login_args == ("smtp-user", "secret")
