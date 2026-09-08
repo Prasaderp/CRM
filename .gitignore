@@ -1,0 +1,53 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+.venv-*/
+.uv-cache/
+.uv-python/
+venv/
+ENV/
+build/
+dist/
+
+# Node / Frontend
+node_modules/
+dist/
+dist-ssr/
+.npm/
+.pnpm-store/
+coverage/
+playwright-report/
+test-results/
+.playwright-artifacts/
+
+# Database
+*.sql.gz
+*.dump
+*.bak
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Required files that should NOT be ignored:
+# !backend/uv.lock
+# !frontend/pnpm-lock.yaml
+# !frontend/src/api/openapi.json
+# !backend/migrations/

@@ -1,0 +1,126 @@
+.lead-form,
+.optional-fields {
+  display: grid;
+  gap: 1.1rem;
+}
+.form-heading h2 {
+  margin: 0.3rem 0 0.5rem;
+}
+.form-heading p:last-child,
+.submit-note {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.lead-form label {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--ink);
+  font-size: 0.93rem;
+  font-weight: 700;
+}
+.lead-form input,
+.lead-form select,
+.lead-form textarea {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #a9b2ad;
+  border-radius: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  color: var(--ink);
+  background: white;
+}
+.lead-form textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+.field-pair,
+.optional-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.field-pair {
+  display: grid;
+  gap: 0.9rem;
+}
+.wide-field {
+  grid-column: 1 / -1;
+}
+.field-error,
+.field-hint {
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+.field-hint {
+  color: var(--muted);
+}
+.form-alert {
+  border: 1px solid var(--error);
+  border-radius: 0.45rem;
+  padding: 0.8rem;
+  color: var(--error);
+  background: rgb(164 38 44 / 7%);
+}
+.lead-form details {
+  border-block: 1px solid var(--line);
+  padding-block: 0.9rem;
+}
+.lead-form summary {
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--brand);
+  font-weight: 750;
+}
+.optional-fields {
+  margin-top: 1rem;
+}
+.consent-group {
+  display: grid;
+  gap: 0.75rem;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.consent-group legend {
+  margin-bottom: 0.65rem;
+  font-weight: 800;
+}
+.lead-form .check-row {
+  display: grid;
+  min-height: 44px;
+  grid-template-columns: 1.3rem 1fr;
+  align-items: start;
+  gap: 0.65rem;
+  font-weight: 500;
+}
+.lead-form .check-row input {
+  width: 1.2rem;
+  min-height: 1.2rem;
+  margin: 0.15rem 0 0;
+}
+.form-shell .test-notice {
+  border-radius: 0.45rem;
+  padding: 0.8rem;
+  color: #644112;
+  background: #fff4d7;
+  font-size: 0.84rem;
+}
+.lead-form button {
+  width: 100%;
+}
+.lead-form button:disabled {
+  cursor: progress;
+  opacity: 0.68;
+}
+.honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+@media (max-width: 720px) {
+  .field-pair,
+  .optional-fields {
+    grid-template-columns: 1fr;
+  }
+}
