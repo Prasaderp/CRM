@@ -4,8 +4,8 @@ import { useForm } from "react-hook-form";
 import { ApiError, createLead, type LeadAccepted, type LeadRequest } from "../../api/client";
 import "./lead-form.css";
 
-export const FORM_VERSION = "property-inquiry-test-1.0";
-export const PRIVACY_NOTICE_VERSION = "TEST-2026-07-31";
+export const FORM_VERSION = "property-inquiry-1.0";
+export const PRIVACY_NOTICE_VERSION = "2026-08-07";
 
 type Attribution = NonNullable<LeadRequest["attribution"]>;
 type Values = {
